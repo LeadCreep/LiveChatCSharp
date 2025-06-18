@@ -103,7 +103,10 @@ namespace LiveChatC_.LiveChat
         {
             Console.WriteLine($"Handling video request: {request.FileName}, Duration: {request.RequestDurationSeconds} seconds, Text: {request.Text}, User : {request.UserName}");
 
-            request.RequestDurationSeconds = await GetVideoLength(request.FilePath);
+            if (request.RequestDurationSeconds <= 0)
+            {
+                request.RequestDurationSeconds = await GetVideoLength(request.FilePath);
+            }
 
             WebPageBuilder.Instance.AddVideo(request.FileName, request.FilePath, request.RequestDurationSeconds);
             WebPageBuilder.Instance.AddText(request.Text, posy: 900);
@@ -119,7 +122,6 @@ namespace LiveChatC_.LiveChat
                 try
                 {
                     File.Delete(request.FilePath);
-                    Console.WriteLine($"Deleted video file: {request.FilePath}");
                 }
                 catch (Exception ex)
                 {
@@ -132,7 +134,10 @@ namespace LiveChatC_.LiveChat
         {
             Console.WriteLine($"Handling audio request: {request.FileName}, Duration: {request.RequestDurationSeconds} seconds, Text: {request.Text}, User : {request.UserName}");
 
-            request.RequestDurationSeconds = await GetAudioLength(request.FilePath);
+            if (request.RequestDurationSeconds <= 0)
+            {
+                request.RequestDurationSeconds = await GetAudioLength(request.FilePath);
+            }
 
             WebPageBuilder.Instance.AddAudio(request.FileName, request.FilePath, request.RequestDurationSeconds);
             WebPageBuilder.Instance.AddText(request.Text, posy: 900);
@@ -148,7 +153,6 @@ namespace LiveChatC_.LiveChat
                 try
                 {
                     File.Delete(request.FilePath);
-                    Console.WriteLine($"Deleted audio file: {request.FilePath}");
                 }
                 catch (Exception ex)
                 {
@@ -178,6 +182,7 @@ namespace LiveChatC_.LiveChat
                     if (urlPath.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
                         urlPath.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
                         urlPath.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                        urlPath.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) ||
                         urlPath.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) ||
                         urlPath.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) ||
                         urlPath.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase) ||

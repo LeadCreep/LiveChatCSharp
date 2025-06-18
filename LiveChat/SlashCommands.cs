@@ -25,7 +25,7 @@ namespace LiveChatC_.LiveChat
 
             var imgGuildCommand = new SlashCommandBuilder()
                 .WithName("img")
-                .WithDescription("Afficher une image [.png / .jpg / .jpeg]")
+                .WithDescription("Afficher une image [.png / .jpg / .jpeg / .gif]")
                 .AddOption("file", ApplicationCommandOptionType.Attachment, "Image to show", isRequired: true)
                 .AddOption("text", ApplicationCommandOptionType.String, "Text to add", isRequired: false)
                 .AddOption("duration", ApplicationCommandOptionType.Number, "Duration in seconds to display the image", isRequired: false, minValue: 1, maxValue: 60);
@@ -46,6 +46,14 @@ namespace LiveChatC_.LiveChat
                 .AddOption("text", ApplicationCommandOptionType.String, "Text to add", isRequired: false)
                 .AddOption("duration", ApplicationCommandOptionType.Number, "Duration in seconds to play the audio, if you want to cut", isRequired: false, minValue: 1, maxValue: 60);
             applicationCommandProperties.Add(audioGuildCommand.Build());
+
+            var linkGuildCommand = new SlashCommandBuilder()
+                .WithName("link")
+                .WithDescription("Afficher un lien")
+                .AddOption("url", ApplicationCommandOptionType.String, "URL to show", isRequired: true)
+                .AddOption("text", ApplicationCommandOptionType.String, "Text to add", isRequired: false)
+                .AddOption("duration", ApplicationCommandOptionType.Number, "Duration in seconds to display the link", isRequired: false, minValue: 1, maxValue: 60);
+            applicationCommandProperties.Add(linkGuildCommand.Build());
 
             try
             {
@@ -74,6 +82,9 @@ namespace LiveChatC_.LiveChat
                 case "audio":
                     await Audio(command);
                     break;
+                //case "link":
+                //    await Link(command);
+                //    break;
                 default:
                     await command.RespondAsync("Should never run here !");
                     break;
@@ -89,7 +100,7 @@ namespace LiveChatC_.LiveChat
         {
             IAttachment attachement = (IAttachment)command.Data.Options.First().Value;
 
-            if (!attachement.Filename.EndsWith(".png") && !attachement.Filename.EndsWith(".jpg") && !attachement.Filename.EndsWith(".jpeg"))
+            if (!attachement.Filename.EndsWith(".png") && !attachement.Filename.EndsWith(".jpg") && !attachement.Filename.EndsWith(".jpeg") && !attachement.Filename.EndsWith(".gif"))
             {
                 await command.RespondAsync("Le fichier n'est pas une image valide.", ephemeral: true);
                 return;
@@ -176,6 +187,71 @@ namespace LiveChatC_.LiveChat
             WebPageHandler.Instance.AddRequest(RequestType.Audio, attachement.Filename, filePath, duration, text, userName);
 
             await command.RespondAsync($"Audio reçu: {attachement.Filename}");
+        }
+
+        private static async Task Link(SocketSlashCommand command)
+        {
+            string url = command.Data.Options.FirstOrDefault(x => x.Name == "url")?.Value?.ToString() ?? string.Empty;
+            string text = command.Data.Options.FirstOrDefault(x => x.Name == "text")?.Value?.ToString() ?? string.Empty;
+            float duration = command.Data.Options.FirstOrDefault(x => x.Name == "duration")?.Value is double d ? (float)d : 5;
+            string userName = command.User.Username;
+
+            if (string.IsNullOrWhiteSpace(url) || !Uri.IsWellFormedUriString(url, UriKind.Absolute))
+            {
+                await command.RespondAsync("URL invalide.", ephemeral: true);
+                return;
+            }
+
+            using (var client = new HttpClient())
+            {
+                try
+                {
+                    var response = await client.GetAsync(url);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        await command.RespondAsync("Erreur lors de la récupération du lien.", ephemeral: true);
+                        return;
+                    }
+
+                    // Save the linked content 
+                    var fileBytes = await response.Content.ReadAsByteArrayAsync();
+                    string fileName = url.Split('/').LastOrDefault() ?? "downloaded_file";
+                    string filePath = Path.Combine(AttachmentDirectory, fileName);
+                    await File.WriteAllBytesAsync(filePath, fileBytes);
+
+                    Console.WriteLine($"File downloaded: {fileName} to {filePath}");
+
+                    switch (fileName.Substring(fileName.Length - 4))
+                    {
+                        case ".png":
+                        case ".jpg":
+                        case "jpeg":
+                        case ".gif":
+                            WebPageHandler.Instance.AddRequest(RequestType.Image, fileName, filePath, duration, text, userName);
+                            break;
+                        case ".mp4":
+                        case ".avi":
+                        case ".mov":
+                            WebPageHandler.Instance.AddRequest(RequestType.Video, fileName, filePath, duration, text, userName);
+                            break;
+                        case ".mp3":
+                        case ".wav":
+                        case ".ogg":
+                            WebPageHandler.Instance.AddRequest(RequestType.Audio, fileName, filePath, duration, text, userName);
+                            break;
+                        default:
+                            await command.RespondAsync($"Le type de fichier {fileName.Substring(fileName.Length - 4)} n'est pas supporté. from {fileName}", ephemeral: true);
+                            break;
+                    }
+                    await command.RespondAsync($"Lien reçu: {url}");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    await command.RespondAsync($"Erreur lors de la récupération du lien: {ex.Message}", ephemeral: true);
+                    return;
+                }
+            }
         }
 
         private static async Task DownloadAttachment(IAttachment attachment, string filePath)
