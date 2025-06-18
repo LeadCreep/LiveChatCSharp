@@ -1,24 +1,30 @@
 ﻿using Discord;
-using Discord.Net;
 using Discord.WebSocket;
-using Newtonsoft.Json;
 
 namespace LiveChatC_.LiveChat
 {
     class Program
     {
+        private const string DotEnvFileLocation = "..\\..\\..\\LiveChat\\.env";
+
         private static DiscordSocketClient? client;
         private static SlashCommands? slashCommands;
 
         private static ulong guildId = 0;
+        private static int port = 3000; // Default port for the web server
 
         public static async Task Main()
         {
-            var root = Directory.GetCurrentDirectory();
-            var dotenvPath = Path.Combine(root, "..\\..\\..\\LiveChat\\.env");
+            var root = AppDomain.CurrentDomain.BaseDirectory;
+            var dotenvPath = Path.Combine(root, DotEnvFileLocation);
             DotEnv.Load(dotenvPath);
 
-            client = new DiscordSocketClient();
+            DiscordSocketConfig config = new DiscordSocketConfig()
+            {
+                //GatewayIntents = GatewayIntents.None
+            };
+
+            client = new DiscordSocketClient(config);
             if (client == null)
             {
                 Console.WriteLine("Failed to initialize DiscordSocketClient.");
@@ -36,9 +42,19 @@ namespace LiveChatC_.LiveChat
             {
                 guildId = ulong.Parse(guildIdString);
             }
+            string? portString = Environment.GetEnvironmentVariable("PORT");
+            if (!string.IsNullOrEmpty(portString) && int.TryParse(portString, out int parsedPort))
+            {
+                port = parsedPort;
+            }
 
             await client.LoginAsync(TokenType.Bot, token);
             await client.StartAsync();
+
+            Task httpServerDeverse = WebPageHandler.DeverseWebPage(port);
+            Task webPageLogic = WebPageHandler.Instance.WebPageLogic();
+
+            await Task.WhenAll(httpServerDeverse, webPageLogic);
 
             await Task.Delay(-1);
         }
@@ -51,25 +67,19 @@ namespace LiveChatC_.LiveChat
 
         public static async Task Client_Ready()
         {
-            Console.WriteLine("Bot is ready!");
+            Console.WriteLine("Le Bot est près !");
 
-            var guildCommand = new SlashCommandBuilder().WithName("list-roles")
-                .WithDescription("List all roles in the server")
-                .AddOption("user", ApplicationCommandOptionType.User, "The user", isRequired: true);
+            Console.WriteLine("Inviter le bot avec :");
 
-            try
+            if (slashCommands == null || client == null)
             {
-                if (client == null)
-                {
-                    return;
-                }
-                await client.Rest.CreateGuildCommand(guildCommand.Build(), guildId);
+                Console.WriteLine("SlashCommands or DiscordSocketClient is not initialized.");
+                return;
             }
-            catch (HttpException ex)
-            {
-                var json = JsonConvert.SerializeObject(ex.Errors, Formatting.Indented);
-                Console.WriteLine($"Error creating global command: {json}");
-            }
+
+            await slashCommands.CreateSlashCommands(client, guildId);
+
+            Console.WriteLine("https://discord.com/oauth2/authorize?client_id=" + Environment.GetEnvironmentVariable("DISCORD_CLIENT_ID") + "&permissions=2147552320&integration_type=0&scope=bot");
         }
     }
 }

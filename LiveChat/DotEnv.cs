@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-
-namespace LiveChatC_.LiveChat
+﻿namespace LiveChatC_.LiveChat
 {
     public static class DotEnv
     {
@@ -9,7 +6,7 @@ namespace LiveChatC_.LiveChat
         {
             if (!File.Exists(path))
             {
-                throw new FileNotFoundException($"The .env file was not found at the specified path: {path}");
+                throw new FileNotFoundException($"Le fichier .env n'as pas été trouvé à : {path}");
             }
             var lines = File.ReadAllLines(path);
             foreach (var line in lines)

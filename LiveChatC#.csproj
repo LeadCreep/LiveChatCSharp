@@ -10,6 +10,11 @@
 
   <ItemGroup>
     <PackageReference Include="Discord.Net" Version="3.17.4" />
+    <PackageReference Include="xFFmpeg.NET" Version="7.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="LiveChat\Attachments\" />
   </ItemGroup>
 
 </Project>
