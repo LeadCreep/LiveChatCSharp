@@ -8,3 +8,4 @@ TODO :
   - Debug duration not working with videos
   - Normalize sound 
   - Make videos bigger when to small / portrait mode (Maybe option to do so)
+  - Skip command
