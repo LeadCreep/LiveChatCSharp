@@ -117,7 +117,7 @@ namespace LiveChatC_.LiveChat
             string text = command.Data.Options.FirstOrDefault(x => x.Name == "text")?.Value?.ToString() ?? string.Empty;
             string userName = command.User.Username;
 
-            string filePath = Path.Combine(AttachmentDirectory, lastRequestId++.ToString(), attachement.Filename);
+            string filePath = Path.Combine(AttachmentDirectory, lastRequestId++.ToString() + attachement.Filename);
 
             try
             {
@@ -148,7 +148,7 @@ namespace LiveChatC_.LiveChat
             string text = command.Data.Options.FirstOrDefault(x => x.Name == "text")?.Value?.ToString() ?? string.Empty;
             string userName = command.User.Username;
 
-            string filePath = Path.Combine(AttachmentDirectory, lastRequestId++.ToString(), attachement.Filename);
+            string filePath = Path.Combine(AttachmentDirectory, lastRequestId++.ToString() + attachement.Filename);
 
             try
             {
@@ -179,7 +179,7 @@ namespace LiveChatC_.LiveChat
             string text = command.Data.Options.FirstOrDefault(x => x.Name == "text")?.Value?.ToString() ?? string.Empty;
             string userName = command.User.Username;
 
-            string filePath = Path.Combine(AttachmentDirectory, lastRequestId++.ToString(), attachement.Filename);
+            string filePath = Path.Combine(AttachmentDirectory, lastRequestId++.ToString() + attachement.Filename);
 
             try
             {

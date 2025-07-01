@@ -82,7 +82,7 @@ namespace LiveChatC_.LiveChat
             WebPageBuilder.Instance.AddText(request.Text, posy: 900);
             WebPageBuilder.Instance.AddText(request.UserName, center: false, font: "Arial", size: 45, strokeWidth: 1);
 
-            await Task.Delay(1050); // Simulate processing time
+            await Task.Delay(2000); // Simulate processing time
 
             WebPageBuilder.Instance.RemoveAll(); // Clear the webpage after processing
 
@@ -113,7 +113,7 @@ namespace LiveChatC_.LiveChat
             WebPageBuilder.Instance.AddText(request.UserName, center: false, font: "Arial", size: 45, strokeWidth: 1);
 
 
-            await Task.Delay(1050); // Simulate processing time
+            await Task.Delay(2000); // Simulate processing time
 
             WebPageBuilder.Instance.RemoveAll(); // Clear the webpage after processing
 
@@ -143,8 +143,7 @@ namespace LiveChatC_.LiveChat
             WebPageBuilder.Instance.AddText(request.Text, posy: 900);
             WebPageBuilder.Instance.AddText(request.UserName, center: false, font: "Arial", size: 45, strokeWidth: 1);
 
-
-            await Task.Delay(1050); // Simulate processing time
+            await Task.Delay(2000); // Simulate processing time
 
             WebPageBuilder.Instance.RemoveAll(); // Clear the webpage after processing
 
