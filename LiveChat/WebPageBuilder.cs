@@ -40,7 +40,7 @@
         {
             webPage += $"<div style=\"display:flex; justify-content:center; align-items:center; width:100%; height:100%;\">" +
                        $"<video controls autoplay style=\"max-width:100%; max-height:100%;\">" +
-                       $"<source src=\"{filePath}\" type=\"video/mp4\">" +
+                       $"<source src=\"{filePath}\" alt=\"{fileName}\" type=\"video/mp4\">" +
                        "Your browser does not support the video tag." +
                        "</video></div>\n";
             refreshDuration = durationSeconds;
@@ -50,7 +50,7 @@
         {
             webPage += $"<div style=\"display:flex; justify-content:center; align-items:center; width:100%; height:100%;\">" +
                        $"<audio controls autoplay>" +
-                       $"<source src=\"{filePath}\" type=\"audio/mpeg\">" +
+                       $"<source src=\"{filePath}\" alt=\"{fileName}\" type=\"audio/mpeg\">" +
                        "Your browser does not support the audio tag." +
                        "</audio></div>\n";
             refreshDuration = durationSeconds;

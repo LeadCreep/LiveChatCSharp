@@ -82,7 +82,7 @@ namespace LiveChatC_.LiveChat
             WebPageBuilder.Instance.AddText(request.Text, posy: 900);
             WebPageBuilder.Instance.AddText(request.UserName, center: false, font: "Arial", size: 45, strokeWidth: 1);
 
-            await Task.Delay((int)(request.RequestDurationSeconds * 1000)); // Simulate processing time
+            await Task.Delay((int)(request.RequestDurationSeconds * 500)); // Simulate processing time
 
             WebPageBuilder.Instance.RemoveAll(); // Clear the webpage after processing
 
@@ -113,7 +113,7 @@ namespace LiveChatC_.LiveChat
             WebPageBuilder.Instance.AddText(request.UserName, center: false, font: "Arial", size: 45, strokeWidth: 1);
 
 
-            await Task.Delay((int)(request.RequestDurationSeconds * 1000)); // Simulate processing time
+            await Task.Delay((int)(request.RequestDurationSeconds * 500)); // Simulate processing time
 
             WebPageBuilder.Instance.RemoveAll(); // Clear the webpage after processing
 
@@ -144,7 +144,7 @@ namespace LiveChatC_.LiveChat
             WebPageBuilder.Instance.AddText(request.UserName, center: false, font: "Arial", size: 45, strokeWidth: 1);
 
 
-            await Task.Delay((int)(request.RequestDurationSeconds * 1000)); // Simulate processing time
+            await Task.Delay((int)(request.RequestDurationSeconds * 500)); // Simulate processing time
 
             WebPageBuilder.Instance.RemoveAll(); // Clear the webpage after processing
 
@@ -248,7 +248,7 @@ namespace LiveChatC_.LiveChat
             {
                 if ((float)metaData.Duration.TotalSeconds > 20f)
                 {
-                    return 20f; // Limit video duration to 30 seconds
+                    return 20f; // Limit audio duration to 20 seconds
                 }
                 return (float)metaData.Duration.TotalSeconds + 1f;
             }

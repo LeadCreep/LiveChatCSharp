@@ -2,12 +2,19 @@
 using Discord.Net;
 using Discord.WebSocket;
 using Newtonsoft.Json;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace LiveChatC_.LiveChat
 {
     public class SlashCommands
     {
         public static readonly string AttachmentDirectory = Path.Combine("..\\..\\..\\LiveChat\\Attachments\\");
+
+        private static readonly int defaultImageDuration = 5;
+        private static readonly int maxVideoDuration = 30;
+        private static readonly int maxAudioDuration = 20;
+
+        private static int lastRequestId = 0;
 
         public SlashCommands(DiscordSocketClient client)
         {
@@ -106,11 +113,11 @@ namespace LiveChatC_.LiveChat
                 return;
             }
 
-            float duration = command.Data.Options.FirstOrDefault(x => x.Name == "duration")?.Value is double d ? (float)d : 5;
+            float duration = command.Data.Options.FirstOrDefault(x => x.Name == "duration")?.Value is double d ? (float)d : defaultImageDuration;
             string text = command.Data.Options.FirstOrDefault(x => x.Name == "text")?.Value?.ToString() ?? string.Empty;
             string userName = command.User.Username;
 
-            string filePath = Path.Combine(AttachmentDirectory, attachement.Filename);
+            string filePath = Path.Combine(AttachmentDirectory, lastRequestId++.ToString(), attachement.Filename);
 
             try
             {
@@ -137,11 +144,11 @@ namespace LiveChatC_.LiveChat
                 return;
             }
 
-            float duration = command.Data.Options.FirstOrDefault(x => x.Name == "duration")?.Value is double d ? (float)d : 0;
+            float duration = command.Data.Options.FirstOrDefault(x => x.Name == "duration")?.Value is double d ? (float)d : maxVideoDuration;
             string text = command.Data.Options.FirstOrDefault(x => x.Name == "text")?.Value?.ToString() ?? string.Empty;
             string userName = command.User.Username;
 
-            string filePath = Path.Combine(AttachmentDirectory, attachement.Filename);
+            string filePath = Path.Combine(AttachmentDirectory, lastRequestId++.ToString(), attachement.Filename);
 
             try
             {
@@ -168,11 +175,11 @@ namespace LiveChatC_.LiveChat
                 return;
             }
 
-            float duration = command.Data.Options.FirstOrDefault(x => x.Name == "duration")?.Value is double d ? (float)d : 0;
+            float duration = command.Data.Options.FirstOrDefault(x => x.Name == "duration")?.Value is double d ? (float)d : maxAudioDuration;
             string text = command.Data.Options.FirstOrDefault(x => x.Name == "text")?.Value?.ToString() ?? string.Empty;
             string userName = command.User.Username;
 
-            string filePath = Path.Combine(AttachmentDirectory, attachement.Filename);
+            string filePath = Path.Combine(AttachmentDirectory, lastRequestId++.ToString(), attachement.Filename);
 
             try
             {
@@ -193,7 +200,7 @@ namespace LiveChatC_.LiveChat
         {
             string url = command.Data.Options.FirstOrDefault(x => x.Name == "url")?.Value?.ToString() ?? string.Empty;
             string text = command.Data.Options.FirstOrDefault(x => x.Name == "text")?.Value?.ToString() ?? string.Empty;
-            float duration = command.Data.Options.FirstOrDefault(x => x.Name == "duration")?.Value is double d ? (float)d : 5;
+            float duration = command.Data.Options.FirstOrDefault(x => x.Name == "duration")?.Value is double d ? (float)d : defaultImageDuration;
             string userName = command.User.Username;
 
             if (string.IsNullOrWhiteSpace(url) || !Uri.IsWellFormedUriString(url, UriKind.Absolute))
@@ -202,57 +209,43 @@ namespace LiveChatC_.LiveChat
                 return;
             }
 
-            using (var client = new HttpClient())
+            try
             {
-                try
+                await DownloadFromLink(command, url, Path.Combine(AttachmentDirectory, "link_content.txt"), duration, text, userName);
+
+                string fileName = url.Split('/').LastOrDefault() ?? "downloaded_file";
+                string filePath = Path.Combine(AttachmentDirectory, fileName);
+
+                switch (fileName.Substring(fileName.Length - 4))
                 {
-                    var response = await client.GetAsync(url);
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        await command.RespondAsync("Erreur lors de la récupération du lien.", ephemeral: true);
-                        return;
-                    }
-
-                    // Save the linked content 
-                    var fileBytes = await response.Content.ReadAsByteArrayAsync();
-                    string fileName = url.Split('/').LastOrDefault() ?? "downloaded_file";
-                    string filePath = Path.Combine(AttachmentDirectory, fileName);
-                    await File.WriteAllBytesAsync(filePath, fileBytes);
-
-                    Console.WriteLine($"File downloaded: {fileName} to {filePath}");
-
-                    switch (fileName.Substring(fileName.Length - 4))
-                    {
-                        case ".png":
-                        case ".jpg":
-                        case "jpeg":
-                        case ".gif":
-                            WebPageHandler.Instance.AddRequest(RequestType.Image, fileName, filePath, duration, text, userName);
-                            break;
-                        case ".mp4":
-                        case ".avi":
-                        case ".mov":
-                            WebPageHandler.Instance.AddRequest(RequestType.Video, fileName, filePath, duration, text, userName);
-                            break;
-                        case ".mp3":
-                        case ".wav":
-                        case ".ogg":
-                            WebPageHandler.Instance.AddRequest(RequestType.Audio, fileName, filePath, duration, text, userName);
-                            break;
-                        default:
-                            await command.RespondAsync($"Le type de fichier {fileName.Substring(fileName.Length - 4)} n'est pas supporté. from {fileName}", ephemeral: true);
-                            break;
-                    }
-                    await command.RespondAsync($"Lien reçu: {url}");
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    await command.RespondAsync($"Erreur lors de la récupération du lien: {ex.Message}", ephemeral: true);
-                    return;
+                    case ".png":
+                    case ".jpg":
+                    case "jpeg":
+                    case ".gif":
+                        WebPageHandler.Instance.AddRequest(RequestType.Image, fileName, filePath, duration, text, userName);
+                        break;
+                    case ".mp4":
+                    case ".avi":
+                    case ".mov":
+                        WebPageHandler.Instance.AddRequest(RequestType.Video, fileName, filePath, duration, text, userName);
+                        break;
+                    case ".mp3":
+                    case ".wav":
+                    case ".ogg":
+                        WebPageHandler.Instance.AddRequest(RequestType.Audio, fileName, filePath, duration, text, userName);
+                        break;
+                    default:
+                        await command.RespondAsync($"Le type de fichier {fileName.Substring(fileName.Length - 4)} n'est pas supporté. from {fileName}", ephemeral: true);
+                        break;
                 }
             }
+            catch (Exception ex)
+            {
+                await command.RespondAsync($"Erreur lors de la récupération du lien: {ex.Message}", ephemeral: true);
+                return;
+            }
         }
+
 
         private static async Task DownloadAttachment(IAttachment attachment, string filePath)
         {
@@ -268,6 +261,30 @@ namespace LiveChatC_.LiveChat
                 {
                     Console.WriteLine($"Failed to download attachment: {attachment.Filename}");
                 }
+            }
+        }
+
+        private static async Task DownloadFromLink(SocketSlashCommand command, string url, string destinationPath, float duration, string text = "", string userName = "")
+        {
+            using (var client = new HttpClient())
+            {
+                var response = await client.GetAsync(url);
+                if (!response.IsSuccessStatusCode)
+                {
+                    await command.RespondAsync("Erreur lors de la récupération du lien.", ephemeral: true);
+                    return;
+                }
+
+                // Save the linked content
+                var fileBytes = await response.Content.ReadAsByteArrayAsync();
+                string fileName = url.Split('/').LastOrDefault() ?? "downloaded_file";
+                string filePath = Path.Combine(AttachmentDirectory, fileName);
+                await File.WriteAllBytesAsync(filePath, fileBytes);
+
+                Console.WriteLine($"File downloaded: {fileName} to {filePath}");
+
+                await command.RespondAsync($"Lien reçu: {url}");
+                return;
             }
         }
     }
