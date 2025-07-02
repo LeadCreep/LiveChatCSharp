@@ -2,7 +2,7 @@
 using Discord.Net;
 using Discord.WebSocket;
 using Newtonsoft.Json;
-using static System.Net.Mime.MediaTypeNames;
+
 
 namespace LiveChatC_.LiveChat
 {

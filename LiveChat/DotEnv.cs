@@ -11,7 +11,7 @@
             var lines = File.ReadAllLines(path);
             foreach (var line in lines)
             {
-                if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#")) continue; // Skip empty lines and comments
+                if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#')) continue; // Skip empty lines and comments
                 var parts = line.Split('=', 2);
                 if (parts.Length != 2) continue; // Skip malformed lines
                 // Remove comment after line if present
