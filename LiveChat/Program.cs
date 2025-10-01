@@ -51,7 +51,7 @@ namespace LiveChatC_.LiveChat
             await client.LoginAsync(TokenType.Bot, token);
             await client.StartAsync();
 
-            Task httpServerDeverse = WebPageHandler.DeverseWebPage(port);
+            Task httpServerDeverse = WebPageHandler.DeverseWeb(port);
             Task webPageLogic = WebPageHandler.Instance.WebPageLogic();
 
             await Task.WhenAll(httpServerDeverse, webPageLogic);

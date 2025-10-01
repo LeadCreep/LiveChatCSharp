@@ -19,9 +19,24 @@
         {
             get
             {
-                return "<html><head><title>Live Chat</title><meta http-equiv=\"refresh\" content=\"" + refreshDuration + "\"></head><body>" + webPage + "</body></html>";
+                return "<html><head><title>Live Chat</title></head><body>" + SSECode + webPage + "</body></html>";
             }
         }
+
+        public const string SSECode = @"
+            <script>
+                const es = new EventSource('/events');
+
+                es.addEventListener('refresh', () => {
+                  location.reload();
+                });
+
+                es.addEventListener('ping', () => { /* heartbeat */ });
+
+                es.onerror = (e) => {
+                  console.error('SSE onerror', e);
+                };
+            </script>";
 
         public WebPageBuilder()
         {

@@ -1,5 +1,7 @@
 ﻿using FFmpeg.NET;
+using System.Collections.Concurrent;
 using System.Net;
+using System.Text;
 
 namespace LiveChatC_.LiveChat
 {
@@ -9,6 +11,21 @@ namespace LiveChatC_.LiveChat
 
         private static WebPageHandler? instance = null;
         private static Engine? ffmpeg;
+
+        private sealed class SseClient
+        {
+            public Guid Id { get; } = Guid.NewGuid();
+            public HttpListenerResponse Response { get; }
+            public StreamWriter Writer { get; }
+            public object Sync { get; } = new();
+            public SseClient(HttpListenerResponse response, StreamWriter writer)
+            {
+                Response = response;
+                Writer = writer;
+            }
+        }
+
+        private static readonly ConcurrentDictionary<Guid, SseClient> sseClients = new();
 
         public static WebPageHandler Instance
         {
@@ -32,14 +49,6 @@ namespace LiveChatC_.LiveChat
                 {
                     await HandleNextRequest();
                 }
-                await Task.Delay(1000);
-            }
-        }
-
-        public async Task WebPageLoop()
-        {
-            while (true)
-            {
                 await Task.Delay(1000);
             }
         }
@@ -82,9 +91,13 @@ namespace LiveChatC_.LiveChat
             WebPageBuilder.Instance.AddText(request.Text, posy: 900);
             WebPageBuilder.Instance.AddText(request.UserName, center: false, font: "Arial", size: 45, strokeWidth: 1);
 
-            await Task.Delay(2000); // Simulate processing time
+            SendRefreshEvent(); // Notify clients to refresh
+
+            await Task.Delay((int)request.RequestDurationSeconds * 1000); // Simulate processing time
 
             WebPageBuilder.Instance.RemoveAll(); // Clear the webpage after processing
+
+            SendRefreshEvent(); // Notify clients to refresh
 
             if (File.Exists(request.FilePath))
             {
@@ -112,10 +125,13 @@ namespace LiveChatC_.LiveChat
             WebPageBuilder.Instance.AddText(request.Text, posy: 900);
             WebPageBuilder.Instance.AddText(request.UserName, center: false, font: "Arial", size: 45, strokeWidth: 1);
 
+            SendRefreshEvent(); // Notify clients to refresh
 
-            await Task.Delay(2000); // Simulate processing time
+            await Task.Delay((int)request.RequestDurationSeconds * 1000); // Simulate processing time
 
             WebPageBuilder.Instance.RemoveAll(); // Clear the webpage after processing
+
+            SendRefreshEvent(); // Notify clients to refresh
 
             if (File.Exists(request.FilePath))
             {
@@ -143,9 +159,13 @@ namespace LiveChatC_.LiveChat
             WebPageBuilder.Instance.AddText(request.Text, posy: 900);
             WebPageBuilder.Instance.AddText(request.UserName, center: false, font: "Arial", size: 45, strokeWidth: 1);
 
-            await Task.Delay(2000); // Simulate processing time
+            SendRefreshEvent(); // Notify clients to refresh
+
+            await Task.Delay((int)request.RequestDurationSeconds * 1000); // Simulate processing time
 
             WebPageBuilder.Instance.RemoveAll(); // Clear the webpage after processing
+
+            SendRefreshEvent(); // Notify clients to refresh
 
             if (File.Exists(request.FilePath))
             {
@@ -160,7 +180,21 @@ namespace LiveChatC_.LiveChat
             }
         }
 
-        public static async Task DeverseWebPage(int port)
+        private static bool isFilePath(string path)
+        {
+            return path.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                   path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                   path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                   path.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) ||
+                   path.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) ||
+                   path.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) ||
+                   path.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase) ||
+                   path.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) ||
+                   path.EndsWith(".avi", StringComparison.OrdinalIgnoreCase) ||
+                   path.EndsWith(".mov", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static async Task DeverseWeb(int port)
         {
             try
             {
@@ -177,58 +211,30 @@ namespace LiveChatC_.LiveChat
 
                     string urlPath = request.Url.AbsolutePath;
 
-                    // Si la requête concerne un ficher
-                    if (urlPath.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
-                        urlPath.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                        urlPath.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
-                        urlPath.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) ||
-                        urlPath.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) ||
-                        urlPath.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) ||
-                        urlPath.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase) ||
-                        urlPath.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) ||
-                        urlPath.EndsWith(".avi", StringComparison.OrdinalIgnoreCase) ||
-                        urlPath.EndsWith(".mov", StringComparison.OrdinalIgnoreCase))
+                    if (urlPath.Equals("/events", StringComparison.OrdinalIgnoreCase))
                     {
-                        string fileName = Path.GetFileName(urlPath);
-                        string filePath = Path.Combine(SlashCommands.AttachmentDirectory, fileName);
-
-                        if (File.Exists(filePath))
-                        {
-                            byte[] fileBytes = await File.ReadAllBytesAsync(filePath);
-                            response.ContentLength64 = fileBytes.Length;
-                            response.ContentType = GetMime(fileName);
-                            await response.OutputStream.WriteAsync(fileBytes, 0, fileBytes.Length);
-                        }
-                        else
-                        {
-                            response.StatusCode = (int)HttpStatusCode.NotFound;
-                            Console.WriteLine($"File not found: {filePath}");
-                        }
-                        response.Close();
+                        HandleSse(context);
                         continue;
                     }
 
-                    // Sinon, servir la page HTML
-                    string responseString = WebPageBuilder.Instance.WebPage;
-                    byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
-
-                    response.ContentLength64 = buffer.Length;
-                    response.ContentType = "text/html";
-                    await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
-                    response.Close();
+                    // Si la requête concerne un ficher
+                    if (isFilePath(urlPath))
+                    {
+                        DeverseFile(response, urlPath);
+                    }
+                    else
+                    {
+                        DeverseWebPage(response);
+                    }
                 }
             }
             catch (HttpListenerException e)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Error starting HttpListener: " + e.Message);
-                Console.WriteLine("Make sure you run the application with administrator privileges to use HttpListener.");
-                Console.ResetColor();
+                DebugError(e.Message);
                 return;
             }
         }
 
-        // Méthode utilitaire pour obtenir le type MIME
         private static string GetMime(string fileName)
         {
             return SlashCommands.AttachmentDirectory;
@@ -274,6 +280,128 @@ namespace LiveChatC_.LiveChat
             }
 
             throw new InvalidOperationException("Impossible de récupérer la durée du fichier vidéo.");
+        }
+
+        public static void DebugError(string errorMessage)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Error: " + errorMessage);
+            Console.WriteLine("Make sure you are running in administrator mode");
+            Console.ResetColor();
+        }
+
+        private async static void DeverseWebPage(HttpListenerResponse response)
+        {
+            string responseString = WebPageBuilder.Instance.WebPage;
+            byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
+
+            response.ContentLength64 = buffer.Length;
+            response.ContentType = "text/html";
+            await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+            response.Close();
+        }
+
+        private async static void DeverseFile(HttpListenerResponse response, string urlPath)
+        {
+            string fileName = Path.GetFileName(urlPath);
+            string filePath = Path.Combine(SlashCommands.AttachmentDirectory, fileName);
+
+            if (File.Exists(filePath))
+            {
+                byte[] fileBytes = await File.ReadAllBytesAsync(filePath);
+                response.ContentLength64 = fileBytes.Length;
+                response.ContentType = GetMime(fileName);
+                try
+                {
+                    await response.OutputStream.WriteAsync(fileBytes, 0, fileBytes.Length);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending file: {ex.Message}");
+                }
+            }
+            else
+            {
+                response.StatusCode = (int)HttpStatusCode.NotFound;
+                Console.WriteLine($"File not found: {filePath}");
+            }
+            response.Close();
+        }
+
+        private static void HandleSse(HttpListenerContext context)
+        {
+            var response = context.Response;
+            response.ContentType = "text/event-stream";
+            response.StatusCode = (int)HttpStatusCode.OK;
+            response.SendChunked = true;
+            response.KeepAlive = true;
+            response.Headers["Cache-Control"] = "no-cache";
+            response.Headers["Connection"] = "keep-alive";
+
+            var writer = new StreamWriter(response.OutputStream, Encoding.UTF8) { AutoFlush = true };
+            var client = new SseClient(response, writer);
+            sseClients[client.Id] = client;
+
+            lock (client.Sync)
+            {
+                writer.WriteLine("retry: 1000\n");
+                writer.WriteLine();
+            }
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    while (true)
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(15));
+                        lock (client.Sync)
+                        {
+                            writer.WriteLine("event: ping");
+                            writer.WriteLine("data: keep-alive");
+                            writer.WriteLine();
+                        }
+                    }
+                }
+                catch
+                {
+                    // Ignorer
+                }
+                finally
+                {
+                    CleanupSseClient(client.Id);
+                }
+            });
+        }
+
+        private static void CleanupSseClient(Guid id)
+        {
+            if (sseClients.TryRemove(id, out var c))
+            {
+                try { c.Writer.Dispose(); } catch { }
+                try { c.Response.Close(); } catch { }
+            }
+        }
+
+        public static void SendRefreshEvent()
+        {
+            foreach (var kv in sseClients)
+            {
+                var client = kv.Value;
+                try
+                {
+                    lock (client.Sync)
+                    {
+                        client.Writer.WriteLine("event: refresh");
+                        client.Writer.WriteLine("data: now");
+                        client.Writer.WriteLine();
+                    }
+                }
+                catch
+                {
+                    CleanupSseClient(client.Id);
+                }
+            }
         }
     }
 }

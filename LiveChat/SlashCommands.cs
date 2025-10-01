@@ -62,6 +62,11 @@ namespace LiveChatC_.LiveChat
                 .AddOption("duration", ApplicationCommandOptionType.Number, "Duration in seconds to display the link", isRequired: false, minValue: 1, maxValue: 60);
             applicationCommandProperties.Add(linkGuildCommand.Build());
 
+            var skipGuildCommand = new SlashCommandBuilder()
+                .WithName("skip")
+                .WithDescription("Passer la requête en cours");
+            applicationCommandProperties.Add(skipGuildCommand.Build());
+
             try
             {
                 await client.Rest.BulkOverwriteGuildCommands(applicationCommandProperties.ToArray(), guildId);
@@ -92,6 +97,9 @@ namespace LiveChatC_.LiveChat
                 //case "link":
                 //    await Link(command);
                 //    break;
+                case "skip":
+                    await Skip(command);
+                    break;
                 default:
                     await command.RespondAsync("Should never run here !");
                     break;
@@ -286,6 +294,13 @@ namespace LiveChatC_.LiveChat
                 await command.RespondAsync($"Lien reçu: {url}");
                 return;
             }
+        }
+
+        private static async Task Skip(SocketSlashCommand command)
+        {
+            WebPageHandler.SendRefreshEvent();
+
+            await command.RespondAsync("Requête en cours passée.");
         }
     }
 }
