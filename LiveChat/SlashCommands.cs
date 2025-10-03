@@ -62,6 +62,11 @@ namespace LiveChatC_.LiveChat
                 .AddOption("duration", ApplicationCommandOptionType.Number, "Duration in seconds to display the link", isRequired: false, minValue: 1, maxValue: 60);
             applicationCommandProperties.Add(linkGuildCommand.Build());
 
+            var skipGuildCommand = new SlashCommandBuilder()
+                .WithName("skip")
+                .WithDescription("Passer la requête en cours");
+            applicationCommandProperties.Add(skipGuildCommand.Build());
+
             try
             {
                 await client.Rest.BulkOverwriteGuildCommands(applicationCommandProperties.ToArray(), guildId);
@@ -89,9 +94,12 @@ namespace LiveChatC_.LiveChat
                 case "audio":
                     await Audio(command);
                     break;
-                //case "link":
-                //    await Link(command);
-                //    break;
+                case "link":
+                    await Link(command);
+                    break;
+                case "skip":
+                    await Skip(command);
+                    break;
                 default:
                     await command.RespondAsync("Should never run here !");
                     break;
@@ -131,6 +139,7 @@ namespace LiveChatC_.LiveChat
 
             WebPageHandler.Instance.AddRequest(RequestType.Image, attachement.Filename, filePath, duration, text, userName);
 
+            Console.WriteLine($"Image received: {attachement.Filename} from {userName}");
             await command.RespondAsync($"Image reçue: {attachement.Filename}");
         }
 
@@ -162,6 +171,7 @@ namespace LiveChatC_.LiveChat
 
             WebPageHandler.Instance.AddRequest(RequestType.Video, attachement.Filename, filePath, duration, text, userName);
 
+            Console.WriteLine($"Video received: {attachement.Filename} from {userName}");
             await command.RespondAsync($"Vidéo reçue: {attachement.Filename}");
         }
 
@@ -193,6 +203,7 @@ namespace LiveChatC_.LiveChat
 
             WebPageHandler.Instance.AddRequest(RequestType.Audio, attachement.Filename, filePath, duration, text, userName);
 
+            Console.WriteLine($"Audio received: {attachement.Filename} from {userName}");
             await command.RespondAsync($"Audio reçu: {attachement.Filename}");
         }
 
@@ -286,6 +297,13 @@ namespace LiveChatC_.LiveChat
                 await command.RespondAsync($"Lien reçu: {url}");
                 return;
             }
+        }
+
+        private static async Task Skip(SocketSlashCommand command)
+        {
+            WebPageHandler.SendRefreshEvent();
+
+            await command.RespondAsync("Requête en cours passée.");
         }
     }
 }

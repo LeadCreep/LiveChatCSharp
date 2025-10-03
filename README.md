@@ -9,6 +9,6 @@ TODO :
   - [X] Skip command => Using SSE
   - [ ] Linux implementation for server
   - [ ] Webp images
-  - [ ] Add links to youtube and twitter videos => Download and play directly, API is a paid one, so scraping it is
+  - [ ] Add links to youtube and twitter videos => Download and play directly, API is a paid one, so scraping it is, youtube-dl
   - [ ] Make videos bigger when to small / portrait mode (Maybe option to do so)
   - [ ] Normalize sound 

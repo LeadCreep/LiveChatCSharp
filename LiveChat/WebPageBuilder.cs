@@ -5,7 +5,6 @@
         private string webPage = string.Empty;
 
         private static WebPageBuilder? instance = null;
-        private float refreshDuration = 1;
         public static WebPageBuilder Instance
         {
             get
@@ -19,41 +18,53 @@
         {
             get
             {
-                return "<html><head><title>Live Chat</title><meta http-equiv=\"refresh\" content=\"" + refreshDuration + "\"></head><body>" + webPage + "</body></html>";
+                return "<html><head><title>Live Chat</title></head><body>" + SSECode + webPage + "</body></html>";
             }
         }
+
+        public const string SSECode = @"
+            <script>
+                const es = new EventSource('/events');
+
+                es.addEventListener('refresh', () => {
+                  location.reload();
+                });
+
+                es.addEventListener('ping', () => { /* heartbeat */ });
+
+                es.onerror = (e) => {
+                  console.error('SSE onerror', e);
+                };
+            </script>";
 
         public WebPageBuilder()
         {
             webPage = string.Empty;
         }
 
-        public void AddImage(string fileName, string filePath, float durationSeconds)
+        public void AddImage(string fileName, string filePath)
         {
             webPage += $"<div style=\"display:flex; justify-content:center; align-items:center; width:100%; height:100%;\">" +
                        $"<img src=\"{filePath}\" alt=\"{fileName}\" style=\"max-width:100%; max-height:100%;\" />" +
                        $"</div>\n";
-            refreshDuration = durationSeconds;
         }
 
-        public void AddVideo(string fileName, string filePath, float durationSeconds = 0)
+        public void AddVideo(string fileName, string filePath)
         {
             webPage += $"<div style=\"display:flex; justify-content:center; align-items:center; width:100%; height:100%;\">" +
                        $"<video controls autoplay style=\"max-width:100%; max-height:100%;\">" +
                        $"<source src=\"{filePath}\" alt=\"{fileName}\" type=\"video/mp4\">" +
                        "Your browser does not support the video tag." +
                        "</video></div>\n";
-            refreshDuration = durationSeconds;
         }
 
-        public void AddAudio(string fileName, string filePath, float durationSeconds = 0)
+        public void AddAudio(string fileName, string filePath)
         {
             webPage += $"<div style=\"display:flex; justify-content:center; align-items:center; width:100%; height:100%;\">" +
                        $"<audio controls autoplay>" +
                        $"<source src=\"{filePath}\" alt=\"{fileName}\" type=\"audio/mpeg\">" +
                        "Your browser does not support the audio tag." +
                        "</audio></div>\n";
-            refreshDuration = durationSeconds;
         }
 
         public void AddText(string text, float size = 64, int posx = 0, int posy = 0, string font = "Impact", bool center = true, float strokeWidth = 3f)
@@ -71,7 +82,6 @@
         public void RemoveAll()
         {
             webPage = string.Empty;
-            refreshDuration = 1; // Reset to default refresh duration
         }
     }
 }
