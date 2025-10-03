@@ -87,13 +87,15 @@ namespace LiveChatC_.LiveChat
         {
             Console.WriteLine($"Handling image request: {request.FileName}, Duration: {request.RequestDurationSeconds} seconds, Text: {request.Text}, User : {request.UserName}");
 
-            WebPageBuilder.Instance.AddImage(request.FileName, request.FilePath, request.RequestDurationSeconds);
+            WebPageBuilder.Instance.AddImage(request.FileName, request.FilePath);
             WebPageBuilder.Instance.AddText(request.Text, posy: 900);
             WebPageBuilder.Instance.AddText(request.UserName, center: false, font: "Arial", size: 45, strokeWidth: 1);
 
             SendRefreshEvent(); // Notify clients to refresh
 
-            await Task.Delay((int)request.RequestDurationSeconds * 1000); // Simulate processing time
+            float time = Math.Min(request.RequestDurationSeconds, 30f);
+
+            await Task.Delay((int)time * 1000); // Simulate processing time
 
             WebPageBuilder.Instance.RemoveAll(); // Clear the webpage after processing
 
@@ -121,13 +123,15 @@ namespace LiveChatC_.LiveChat
                 request.RequestDurationSeconds = await GetVideoLength(request.FilePath);
             }
 
-            WebPageBuilder.Instance.AddVideo(request.FileName, request.FilePath, request.RequestDurationSeconds);
+            WebPageBuilder.Instance.AddVideo(request.FileName, request.FilePath);
             WebPageBuilder.Instance.AddText(request.Text, posy: 900);
             WebPageBuilder.Instance.AddText(request.UserName, center: false, font: "Arial", size: 45, strokeWidth: 1);
 
             SendRefreshEvent(); // Notify clients to refresh
 
-            await Task.Delay((int)request.RequestDurationSeconds * 1000); // Simulate processing time
+            float time = Math.Min(request.RequestDurationSeconds, 60f);
+
+            await Task.Delay((int)time * 1000); // Simulate processing time
 
             WebPageBuilder.Instance.RemoveAll(); // Clear the webpage after processing
 
@@ -155,13 +159,15 @@ namespace LiveChatC_.LiveChat
                 request.RequestDurationSeconds = await GetAudioLength(request.FilePath);
             }
 
-            WebPageBuilder.Instance.AddAudio(request.FileName, request.FilePath, request.RequestDurationSeconds);
+            WebPageBuilder.Instance.AddAudio(request.FileName, request.FilePath);
             WebPageBuilder.Instance.AddText(request.Text, posy: 900);
             WebPageBuilder.Instance.AddText(request.UserName, center: false, font: "Arial", size: 45, strokeWidth: 1);
 
             SendRefreshEvent(); // Notify clients to refresh
 
-            await Task.Delay((int)request.RequestDurationSeconds * 1000); // Simulate processing time
+            float time = Math.Min(request.RequestDurationSeconds, 30f);
+
+            await Task.Delay((int)time * 1000); // Simulate processing time
 
             WebPageBuilder.Instance.RemoveAll(); // Clear the webpage after processing
 

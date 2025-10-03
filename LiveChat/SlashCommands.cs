@@ -94,9 +94,9 @@ namespace LiveChatC_.LiveChat
                 case "audio":
                     await Audio(command);
                     break;
-                //case "link":
-                //    await Link(command);
-                //    break;
+                case "link":
+                    await Link(command);
+                    break;
                 case "skip":
                     await Skip(command);
                     break;
@@ -139,6 +139,7 @@ namespace LiveChatC_.LiveChat
 
             WebPageHandler.Instance.AddRequest(RequestType.Image, attachement.Filename, filePath, duration, text, userName);
 
+            Console.WriteLine($"Image received: {attachement.Filename} from {userName}");
             await command.RespondAsync($"Image reçue: {attachement.Filename}");
         }
 
@@ -170,6 +171,7 @@ namespace LiveChatC_.LiveChat
 
             WebPageHandler.Instance.AddRequest(RequestType.Video, attachement.Filename, filePath, duration, text, userName);
 
+            Console.WriteLine($"Video received: {attachement.Filename} from {userName}");
             await command.RespondAsync($"Vidéo reçue: {attachement.Filename}");
         }
 
@@ -201,6 +203,7 @@ namespace LiveChatC_.LiveChat
 
             WebPageHandler.Instance.AddRequest(RequestType.Audio, attachement.Filename, filePath, duration, text, userName);
 
+            Console.WriteLine($"Audio received: {attachement.Filename} from {userName}");
             await command.RespondAsync($"Audio reçu: {attachement.Filename}");
         }
 
